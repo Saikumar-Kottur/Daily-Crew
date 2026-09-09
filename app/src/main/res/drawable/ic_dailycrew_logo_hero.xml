@@ -1,0 +1,61 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="160dp"
+    android:height="160dp"
+    android:viewportWidth="160"
+    android:viewportHeight="160">
+
+    <!-- Ambient Outer Green Glow Ring -->
+    <path
+        android:fillColor="#1500E676"
+        android:pathData="M80,80m-68,0a68,68 0,1 1,136 0a68,68 0,1 1,-136 0" />
+
+    <!-- Outer Protective Hex Shield Frame (Vibrant Green Success Accent) -->
+    <path
+        android:fillColor="#00E676"
+        android:pathData="M80,24L128,45v36c0,27.5 -18.7,53.2 -48,61.5c-29.3,-8.3 -48,-34 -48,-61.5V45L80,24z" />
+
+    <!-- Inner Core Deep Blue Shield with subtle depth gradient -->
+    <path
+        android:pathData="M80,30L122,48v33c0,23.8 -16.2,46.5 -42,54c-25.8,-7.5 -42,-30.2 -42,-54V48L80,30z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="80"
+                android:startY="30"
+                android:endX="80"
+                android:endY="135"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#14283E" />
+                <item android:offset="0.5" android:color="#0D1B2A" />
+                <item android:offset="1.0" android:color="#060E18" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Subtle Hardhat Workforce Crown (Top of Monogram) in Emerald Accent -->
+    <path
+        android:fillColor="#00E676"
+        android:pathData="M80,34c-5.5,0 -10,3.5 -10,8h20c0,-4.5 -4.5,-8 -10,-8z" />
+
+    <!-- Interlocking "D" and "C" Modern Monogram in Pure Crisp White & Emerald Green -->
+    <!-- Left Bold "D" Arc -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,48h18c11,0 20,9 20,20c0,11 -9,20 -20,20H62v18h-8V48z M62,80h10c6.6,0 12,-5.4 12,-12s-5.4,-12 -12,-12H62V80z" />
+
+    <!-- Interlocking "C" Arc in Vibrant Green Success Accent -->
+    <path
+        android:fillColor="#00E676"
+        android:pathData="M98,60c-3,-5.2 -8.7,-9 -15,-9c-2.2,0 -4.5,0.5 -6.5,1.2l3.9,6.3c0.9,-0.3 1.7,-0.5 2.6,-0.5c3.8,0 7,2.2 8.5,5.4L98,60z" />
+    <path
+        android:fillColor="#00E676"
+        android:pathData="M98,87l-6.5,-3.4c-1.5,3.2 -4.7,5.4 -8.5,5.4c-0.9,0 -1.7,-0.2 -2.6,-0.5l-3.9,6.3c2,0.7 4.3,1.2 6.5,1.2c6.3,0 12,-3.8 15,-9z" />
+
+    <!-- Center Verified Trust Star / Checkmark Circle in Green & Deep Blue -->
+    <path
+        android:fillColor="#00E676"
+        android:pathData="M80,86m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0" />
+    <path
+        android:fillColor="#0D1B2A"
+        android:pathData="M77.8,90.8l-4.8,-4.8l2.1,-2.1l2.7,2.7l7.2,-7.2l2.1,2.1z" />
+</vector>

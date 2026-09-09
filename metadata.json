@@ -1,0 +1,7 @@
+{
+  "name": "DAILYCREW",
+  "description": "Trusted workforce marketplace connecting verified workers with verified businesses for catering, hospitality, event staff, housekeeping, and kitchen helpers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
