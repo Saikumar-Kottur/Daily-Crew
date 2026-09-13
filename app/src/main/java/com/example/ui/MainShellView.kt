@@ -3,6 +3,7 @@ package com.example.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -30,6 +31,7 @@ import com.example.data.model.AppRole
 import com.example.notification.DailyCrewNotificationService
 import com.example.ui.admin.AdminDashboardView
 import com.example.ui.admin.SuperAdminSettingsView
+import com.example.ui.auth.DailyCrewLoginScreen
 import com.example.ui.common.AiMatchingScreen
 import com.example.ui.common.NotificationsScreen
 import com.example.ui.components.*
@@ -40,9 +42,12 @@ import com.example.ui.owner.OwnerDashboardView
 import com.example.ui.owner.OwnerPostJobView
 import com.example.ui.splash.DailyCrewSplashScreen
 import com.example.ui.theme.*
+import com.example.ui.verification.UserVerificationDialog
+import com.example.util.DailyCrewLocalization
 import com.example.ui.worker.WorkerCheckInView
 import com.example.ui.worker.WorkerEarningsView
 import com.example.ui.worker.WorkerJobsView
+import com.example.ui.worker.WorkerProfileView
 import com.example.ui.worker.WorkerTrustView
 import com.example.viewmodel.DailyCrewViewModel
 
@@ -81,13 +86,18 @@ fun MainShellView(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val filteredJobs by viewModel.filteredJobs.collectAsStateWithLifecycle()
+    val jobs by viewModel.jobs.collectAsStateWithLifecycle()
+    val workerTabFilteredJobs by viewModel.workerTabFilteredJobs.collectAsStateWithLifecycle()
     val workerProfile by viewModel.workerProfile.collectAsStateWithLifecycle()
     val businessProfile by viewModel.businessProfile.collectAsStateWithLifecycle()
     val applicants by viewModel.applicants.collectAsStateWithLifecycle()
     val transactions by viewModel.transactions.collectAsStateWithLifecycle()
+    val suretyTransactions by viewModel.suretyTransactions.collectAsStateWithLifecycle()
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
+    val platformSettings by viewModel.platformSettings.collectAsStateWithLifecycle()
     val aiRecommendedJobs by viewModel.aiRecommendedJobs.collectAsStateWithLifecycle()
     val aiTopApplicants by viewModel.aiTopApplicants.collectAsStateWithLifecycle()
+    val dbRecords by viewModel.dbVerifications.collectAsStateWithLifecycle()
 
     var showNotificationsScreen by remember { mutableStateOf(false) }
     var showAiMatchingScreen by remember { mutableStateOf(false) }
@@ -103,9 +113,41 @@ fun MainShellView(
         }
     }
 
+    // Handle system back button for in-app overlays and views
+    BackHandler(enabled = showSplashScreen) {
+        showSplashScreen = false
+    }
+    BackHandler(enabled = !showSplashScreen && !uiState.isAuthenticated) {
+        showSplashScreen = true
+    }
+    BackHandler(enabled = !showSplashScreen && showAiMatchingScreen) {
+        showAiMatchingScreen = false
+    }
+    BackHandler(enabled = !showSplashScreen && !showAiMatchingScreen && showNotificationsScreen) {
+        showNotificationsScreen = false
+    }
+    BackHandler(enabled = !showSplashScreen && !showAiMatchingScreen && !showNotificationsScreen && uiState.isChatSheetOpen) {
+        viewModel.closeChatSheet()
+    }
+    BackHandler(enabled = !showSplashScreen && !showAiMatchingScreen && !showNotificationsScreen && !uiState.isChatSheetOpen && uiState.isCheckInScannerOpen) {
+        viewModel.openCheckInScanner(false)
+    }
+    BackHandler(enabled = !showSplashScreen && !showAiMatchingScreen && !showNotificationsScreen && !uiState.isChatSheetOpen && !uiState.isCheckInScannerOpen && uiState.selectedJobForDetails != null) {
+        viewModel.closeJobDetails()
+    }
+    BackHandler(enabled = !showSplashScreen && uiState.isReferDialogOpen) {
+        viewModel.openReferDialog(false)
+    }
+
     if (showSplashScreen) {
         DailyCrewSplashScreen(
             onContinue = { showSplashScreen = false }
+        )
+    } else if (!uiState.isAuthenticated) {
+        DailyCrewLoginScreen(
+            onLoginSuccess = { role, name, phone ->
+                viewModel.login(role, name, phone)
+            }
         )
     } else {
         Scaffold(
@@ -130,8 +172,19 @@ fun MainShellView(
                         showAiMatchingScreen = !showAiMatchingScreen
                         showNotificationsScreen = false
                     },
+                    onReferClick = {
+                        viewModel.openReferDialog(true)
+                    },
+                    onVerificationClick = {
+                        viewModel.openVerificationDialog(true)
+                    },
                     onLogoClick = {
                         showSplashScreen = true
+                    },
+                    onLogout = {
+                        showNotificationsScreen = false
+                        showAiMatchingScreen = false
+                        viewModel.logout()
                     }
                 )
             },
@@ -151,7 +204,7 @@ fun MainShellView(
                                 viewModel.setBottomNavIndex(0)
                             },
                             icon = { Icon(Icons.Default.Work, contentDescription = "Shifts") },
-                            label = { Text("Shifts", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            label = { Text(DailyCrewLocalization.get("nav_shifts", uiState.selectedLanguage), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color.Black,
                                 selectedTextColor = BrandPrimaryGreen,
@@ -169,7 +222,7 @@ fun MainShellView(
                                 viewModel.setBottomNavIndex(1)
                             },
                             icon = { Icon(Icons.Default.QrCodeScanner, contentDescription = "Check-In") },
-                            label = { Text("Check-In", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            label = { Text(DailyCrewLocalization.get("nav_checkin", uiState.selectedLanguage), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color.Black,
                                 selectedTextColor = BrandPrimaryGreen,
@@ -187,7 +240,7 @@ fun MainShellView(
                                 viewModel.setBottomNavIndex(2)
                             },
                             icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Wallet") },
-                            label = { Text("Wallet", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            label = { Text(DailyCrewLocalization.get("nav_wallet", uiState.selectedLanguage), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color.Black,
                                 selectedTextColor = BrandPrimaryGreen,
@@ -204,8 +257,8 @@ fun MainShellView(
                                 showAiMatchingScreen = false
                                 viewModel.setBottomNavIndex(3)
                             },
-                            icon = { Icon(Icons.Default.VerifiedUser, contentDescription = "Trust Score") },
-                            label = { Text("Trust", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            icon = { Icon(Icons.Default.AccountCircle, contentDescription = "Worker Profile") },
+                            label = { Text(DailyCrewLocalization.get("nav_profile", uiState.selectedLanguage), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color.Black,
                                 selectedTextColor = BrandPrimaryGreen,
@@ -225,7 +278,7 @@ fun MainShellView(
                                 viewModel.setBottomNavIndex(0)
                             },
                             icon = { Icon(Icons.Default.Dashboard, contentDescription = "Shifts") },
-                            label = { Text("Shifts", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            label = { Text(DailyCrewLocalization.get("nav_shifts", uiState.selectedLanguage), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color.Black,
                                 selectedTextColor = BrandSecondaryCyan,
@@ -243,7 +296,7 @@ fun MainShellView(
                                 viewModel.setBottomNavIndex(1)
                             },
                             icon = { Icon(Icons.Default.AddCircle, contentDescription = "Post Shift") },
-                            label = { Text("Post Shift", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            label = { Text(DailyCrewLocalization.get("nav_post_shift", uiState.selectedLanguage), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color.Black,
                                 selectedTextColor = BrandSecondaryCyan,
@@ -260,8 +313,8 @@ fun MainShellView(
                                 showAiMatchingScreen = false
                                 viewModel.setBottomNavIndex(2)
                             },
-                            icon = { Icon(Icons.Default.People, contentDescription = "Applicants") },
-                            label = { Text("Applicants", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            icon = { Icon(Icons.Default.People, contentDescription = "Worker Marketplace") },
+                            label = { Text(DailyCrewLocalization.get("nav_marketplace", uiState.selectedLanguage), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color.Black,
                                 selectedTextColor = BrandSecondaryCyan,
@@ -279,7 +332,7 @@ fun MainShellView(
                                 viewModel.setBottomNavIndex(3)
                             },
                             icon = { Icon(Icons.Default.Shield, contentDescription = "Business Trust") },
-                            label = { Text("Credibility", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                            label = { Text(DailyCrewLocalization.get("nav_credibility", uiState.selectedLanguage), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color.Black,
                                 selectedTextColor = BrandSecondaryCyan,
@@ -461,21 +514,28 @@ fun MainShellView(
                 uiState.role == AppRole.WORKER -> {
                     when (uiState.bottomNavIndex) {
                         0 -> WorkerJobsView(
-                            jobs = filteredJobs,
+                            jobs = workerTabFilteredJobs,
                             workerProfile = workerProfile,
+                            activeTab = uiState.workerActiveTab,
+                            onTabSelect = { viewModel.setWorkerJobTab(it) },
                             searchQuery = uiState.searchQuery,
                             onSearchChange = { viewModel.setSearchQuery(it) },
                             selectedCategory = uiState.selectedCategory,
                             onSelectCategory = { viewModel.selectCategory(it) },
-                            filterRadiusKm = uiState.filterRadiusKm,
-                            onRadiusChange = { viewModel.setRadius(it) },
                             selectedZone = uiState.selectedZoneFilter,
                             onSelectZone = { viewModel.setZoneFilter(it) },
+                            filterRadiusKm = uiState.filterRadiusKm,
+                            onRadiusChange = { viewModel.setRadius(it) },
+                            minWageFilter = uiState.minWageFilter,
+                            onMinWageChange = { viewModel.setMinWageFilter(it) },
                             filterEmergencyOnly = uiState.filterEmergencyOnly,
                             onToggleEmergency = { viewModel.toggleEmergencyFilter() },
                             onToggleStandby = { viewModel.toggleWorkerStandby() },
+                            onOpenSuretyDialog = { viewModel.openSuretyDialog(true) },
                             onJobClick = { viewModel.openJobDetails(it) },
-                            onApplyJob = { viewModel.applyForJob(it) }
+                            onApplyJob = { viewModel.applyForJob(it) },
+                            onToggleSaveJob = { viewModel.toggleSaveJob(it) },
+                            onWithdrawJob = { viewModel.withdrawJobApplication(it) }
                         )
                         1 -> WorkerCheckInView(
                             worker = workerProfile,
@@ -485,10 +545,20 @@ fun MainShellView(
                         2 -> WorkerEarningsView(
                             worker = workerProfile,
                             transactions = transactions,
+                            selectedLanguage = uiState.selectedLanguage,
                             onWithdrawClick = { viewModel.openWithdrawDialog(true) },
-                            onReportDisputeClick = { viewModel.openDisputeDialog(true) }
+                            onReportDisputeClick = { viewModel.openDisputeDialog(true) },
+                            onReferClick = { viewModel.openReferDialog(true) }
                         )
-                        3 -> WorkerTrustView(worker = workerProfile)
+                        3 -> WorkerProfileView(
+                            worker = workerProfile,
+                            suretyTransactions = suretyTransactions,
+                            selectedLanguage = uiState.selectedLanguage,
+                            onSelectLanguage = { viewModel.selectLanguage(it) },
+                            onToggleStandby = { viewModel.toggleWorkerStandby() },
+                            onOpenSuretyDialog = { viewModel.openSuretyDialog(true) },
+                            onOpenVerificationDialog = { viewModel.openVerificationDialog(true) }
+                        )
                     }
                 }
                 uiState.role == AppRole.OWNER -> {
@@ -496,9 +566,12 @@ fun MainShellView(
                         0 -> OwnerDashboardView(
                             business = businessProfile,
                             applicants = applicants,
+                            jobs = jobs,
                             onTriggerPayout = { amt -> viewModel.triggerOwnerAutoPayout(amt) },
                             onNavigateToPostJob = { viewModel.setBottomNavIndex(1) },
-                            onOpenEmergencyHiring = { viewModel.openEmergencyHiringDialog(true) }
+                            onOpenEmergencyHiring = { viewModel.openEmergencyHiringDialog(true) },
+                            onEditJob = { viewModel.openEditJobDialog(it) },
+                            onReferClick = { viewModel.openReferDialog(true) }
                         )
                         1 -> OwnerPostJobView(
                             onPublishJob = { title, cat, wage, count, dress, instructions, loc, time ->
@@ -509,9 +582,16 @@ fun MainShellView(
                             applicants = applicants,
                             onHireWorker = { viewModel.hireApplicant(it) },
                             onRejectWorker = { viewModel.rejectApplicant(it) },
-                            onChatWithWorker = { viewModel.openChatWithApplicant(it) }
+                            onChatWithWorker = { viewModel.openChatWithApplicant(it) },
+                            onReportNoShow = { viewModel.openReportNoShowDialog(it) },
+                            onRateWorker = { viewModel.openRateWorkerDialog(it) }
                         )
-                        3 -> OwnerBusinessTrustView(business = businessProfile)
+                        3 -> OwnerBusinessTrustView(
+                            business = businessProfile,
+                            selectedLanguage = uiState.selectedLanguage,
+                            onSelectLanguage = { viewModel.selectLanguage(it) },
+                            onOpenVerificationDialog = { viewModel.openVerificationDialog(true) }
+                        )
                     }
                 }
                 uiState.role == AppRole.ADMIN -> {
@@ -531,6 +611,59 @@ fun MainShellView(
                 )
             }
 
+            if (uiState.isSuretyDialogOpen) {
+                SuretyEscrowDialog(
+                    workerProfile = workerProfile,
+                    suretyTransactions = suretyTransactions,
+                    onDismiss = { viewModel.openSuretyDialog(false) },
+                    onTopUp = { viewModel.topUpSuretyBalance(it) },
+                    onWithdraw = { viewModel.withdrawSuretyBalance(it) }
+                )
+            }
+
+            val editJob = uiState.selectedJobForEdit
+            if (uiState.isEditJobDialogOpen && editJob != null) {
+                EditJobDialog(
+                    job = editJob,
+                    onDismiss = { viewModel.closeEditJobDialog() },
+                    onSave = { title, cat, wage, count, time, dress, loc, instructions ->
+                        viewModel.saveEditedJob(
+                            jobId = editJob.id,
+                            title = title,
+                            category = cat,
+                            wageAmount = wage,
+                            workersRequired = count,
+                            time = time,
+                            dressCode = dress,
+                            location = loc,
+                            instructions = instructions
+                        )
+                    }
+                )
+            }
+
+            val noShowApplicant = uiState.selectedApplicantForNoShow
+            if (uiState.isReportNoShowDialogOpen && noShowApplicant != null) {
+                ReportNoShowDialog(
+                    applicant = noShowApplicant,
+                    onDismiss = { viewModel.closeReportNoShowDialog() },
+                    onSubmit = { reason ->
+                        viewModel.submitReportNoShow(noShowApplicant.id, reason)
+                    }
+                )
+            }
+
+            val ratingApplicant = uiState.selectedApplicantForRating
+            if (uiState.isRateWorkerDialogOpen && ratingApplicant != null) {
+                RateWorkerDialog(
+                    applicant = ratingApplicant,
+                    onDismiss = { viewModel.closeRateWorkerDialog() },
+                    onSubmitRating = { rating, feedback ->
+                        viewModel.submitWorkerRating(ratingApplicant.id, rating, feedback)
+                    }
+                )
+            }
+
             if (uiState.isCheckInScannerOpen) {
                 CheckInScannerDialog(
                     onDismiss = { viewModel.openCheckInScanner(false) },
@@ -541,8 +674,58 @@ fun MainShellView(
             if (uiState.isWithdrawDialogOpen) {
                 WithdrawDialog(
                     balance = workerProfile.walletBalance,
+                    freePassesCount = workerProfile.freeCommissionWithdrawalsCount,
+                    commissionRatePercent = platformSettings.workerWithdrawalCommissionPercent,
+                    defaultAccountHolder = workerProfile.name,
+                    onReferClick = {
+                        viewModel.openWithdrawDialog(false)
+                        viewModel.openReferDialog(true)
+                    },
                     onDismiss = { viewModel.openWithdrawDialog(false) },
-                    onConfirmWithdraw = { viewModel.withdrawWallet(it) }
+                    onConfirmWithdraw = { amount, method, destination ->
+                        viewModel.withdrawWallet(amount, method, destination)
+                    }
+                )
+            }
+
+            if (uiState.isReferDialogOpen) {
+                ReferAndEarnDialog(
+                    role = uiState.role,
+                    worker = workerProfile,
+                    business = businessProfile,
+                    selectedLanguage = uiState.selectedLanguage,
+                    onDismiss = { viewModel.openReferDialog(false) },
+                    onReferWorker = { name, phone ->
+                        viewModel.referWorkerFriend(name, phone)
+                    },
+                    onSimulateWorkerFriendShift = { friendId ->
+                        viewModel.simulateFriendEarnings(friendId, 1000.0)
+                    },
+                    onReferOwner = { name, phone ->
+                        viewModel.referBusinessOwner(name, phone)
+                    },
+                    onSimulateOwnerSuretyBonus = { ownerId ->
+                        viewModel.simulateOwnerSuretyReferralBonus(ownerId)
+                    },
+                    onApplyCode = { code ->
+                        viewModel.applyReferralCode(code)
+                    }
+                )
+            }
+
+            if (uiState.isVerificationDialogOpen) {
+                UserVerificationDialog(
+                    role = uiState.role,
+                    workerProfile = workerProfile,
+                    businessProfile = businessProfile,
+                    dbRecords = dbRecords,
+                    onDismiss = { viewModel.openVerificationDialog(false) },
+                    onSubmitWorkerVerification = { name, docType, num, secType, secNum, dob, addr, zone, front, back, selfie ->
+                        viewModel.submitWorkerVerification(name, docType, num, secType, secNum, dob, addr, zone, front, back, selfie)
+                    },
+                    onSubmitBusinessVerification = { name, docType, num, secType, secNum, addr, zone, bType, docUri, signName, signPhone ->
+                        viewModel.submitBusinessVerification(name, docType, num, secType, secNum, addr, zone, bType, docUri, signName, signPhone)
+                    }
                 )
             }
 
@@ -565,7 +748,8 @@ fun MainShellView(
             }
 
             // Interactive Chat Overlay
-            if (uiState.isChatSheetOpen && uiState.activeChatApplicant != null) {
+            val chatApplicant = uiState.activeChatApplicant
+            if (uiState.isChatSheetOpen && chatApplicant != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -576,7 +760,7 @@ fun MainShellView(
                         verticalArrangement = Arrangement.Bottom
                     ) {
                         ChatSheet(
-                            applicant = uiState.activeChatApplicant!!,
+                            applicant = chatApplicant,
                             messages = uiState.chatMessages,
                             onSendMessage = { viewModel.sendChatMessage(it) },
                             onClose = { viewModel.closeChatSheet() }

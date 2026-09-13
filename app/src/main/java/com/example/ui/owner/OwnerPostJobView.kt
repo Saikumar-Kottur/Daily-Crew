@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.ai.DailyCrewAiService
 import com.example.data.model.JobCategory
 import com.example.ui.theme.*
 
@@ -43,6 +44,18 @@ fun OwnerPostJobView(
     var instructions by remember { mutableStateOf("Report directly to Banquet Captain at Gate 2. Clean groomed appearance.") }
     var location by remember { mutableStateOf("Banjara Hills, Hyderabad") }
     var time by remember { mutableStateOf("Tonight, 6:00 PM - 2:00 AM") }
+    var aiTipText by remember { mutableStateOf<String?>(null) }
+    var aiKeySkills by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    fun applyAiDraft(cat: JobCategory) {
+        val draft = DailyCrewAiService.generateJobDraft(roleKeyword = title, category = cat)
+        title = draft.title
+        wageText = draft.suggestedWage.toInt().toString()
+        dressCode = draft.dressCode
+        instructions = draft.instructions
+        aiTipText = draft.tips
+        aiKeySkills = draft.keySkills
+    }
 
     Column(
         modifier = Modifier
@@ -63,7 +76,102 @@ fun OwnerPostJobView(
             style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryDark)
         )
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // AI Assistant Card
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = BrandSecondaryCyanDim),
+            border = BorderStroke(1.dp, BrandSecondaryCyan.copy(alpha = 0.5f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("ai_job_assistant_card")
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = BrandSecondaryCyan,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "DailyCrew AI Job Assistant",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = BrandSecondaryCyan
+                            )
+                        )
+                    }
+
+                    Button(
+                        onClick = { applyAiDraft(selectedCategory) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BrandSecondaryCyan,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.testTag("btn_ai_autofill")
+                    ) {
+                        Text("Auto-Fill with AI", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                if (aiTipText != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = aiTipText ?: "",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontSize = 12.sp
+                        )
+                    )
+                }
+
+                if (aiKeySkills.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "SUGGESTED SKILLS NEEDED:",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = BrandSecondaryCyan,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        aiKeySkills.forEach { skill ->
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = BrandSurfaceDark,
+                                border = BorderStroke(1.dp, BrandSecondaryCyan.copy(alpha = 0.3f))
+                            ) {
+                                Text(
+                                    text = "✓ $skill",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         // Job Title
         OutlinedTextField(
@@ -230,7 +338,38 @@ fun OwnerPostJobView(
             )
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = BrandSurfaceDark),
+            border = BorderStroke(1.dp, BrandSecondaryCyan.copy(alpha = 0.35f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Security, contentDescription = null, tint = BrandSecondaryCyan, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Owner Surety Fee", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Text("₹300 Escrow", color = BrandSecondaryCyan, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "• Owner surety deposit: ₹300 placed in refundable escrow to prevent fake listings.\n• Worker surety fee: ₹100 locked per worker upon acceptance to prevent no-shows.",
+                    color = TextSecondaryDark,
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
 
         // Publish Button
         Button(

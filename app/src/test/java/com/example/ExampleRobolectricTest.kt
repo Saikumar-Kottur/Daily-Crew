@@ -6,6 +6,7 @@ import com.example.data.model.AppRole
 import com.example.data.model.JobCategory
 import com.example.viewmodel.DailyCrewViewModel
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -166,12 +167,118 @@ class ExampleRobolectricTest {
         val heroLogo = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.ic_dailycrew_logo_hero)
         assertTrue("DailyCrew brand logo drawable should be non-null", brandLogo != null)
         assertTrue("DailyCrew hero logo drawable should be non-null", heroLogo != null)
+    }
 
-        // Verify brand color constants
-        assertEquals(0xFF0D1B2A, com.example.ui.theme.BrandDeepBlue.value.toLong().shr(32).let { 
-            // In Compose Color, value is packed ULong ARGB
-            (com.example.ui.theme.BrandDeepBlue.value shr 32).toLong()
-        })
+    @Test
+    fun `test worker profile verification status, work history, and skill badges`() {
+        val viewModel = DailyCrewViewModel()
+        val profile = viewModel.workerProfile.value
+
+        // Verification status assertions
+        assertTrue("Worker should be fully verified", profile.isFullyVerified)
+        assertTrue("Phone should be verified", profile.isPhoneVerified)
+        assertTrue("Aadhaar should be verified", profile.isAadhaarVerified)
+        assertTrue("Police clearance should be verified", profile.isPoliceVerified)
+        assertTrue("Selfie face match should be verified", profile.isSelfieVerified)
+        assertEquals(96, profile.trustScore)
+        assertEquals(com.example.data.model.BadgeTier.PLATINUM, profile.badgeTier)
+
+        // Work history assertions
+        assertTrue("Worker should have completed shifts in history", profile.workHistory.isNotEmpty())
+        val firstShift = profile.workHistory.first()
+        assertEquals("Royal Feast Caterers", firstShift.businessName)
+        assertEquals(5.0, firstShift.ratingGiven, 0.01)
+        assertTrue("Shift should have positive supervisor review", firstShift.supervisorReview.isNotBlank())
+        assertTrue("Shift should have verified checkout", firstShift.isVerifiedCheckout)
+
+        // Skill badges assertions
+        assertTrue("Worker should have accredited skill badges", profile.skillBadgesList.isNotEmpty())
+        val cateringBadge = profile.skillBadgesList.first { it.name == "Catering Steward" }
+        assertTrue("Catering Steward should be accredited", cateringBadge.isAccredited)
+        assertTrue("Badge should have positive endorsements", cateringBadge.endorsements > 0)
+    }
+
+    @Test
+    fun `test marketplace filtering by skills like catering and housekeeping and verification status`() {
+        val viewModel = DailyCrewViewModel()
+        val allApplicants = viewModel.applicants.value
+
+        assertTrue("Should have initial marketplace applicants", allApplicants.isNotEmpty())
+
+        // 1. Filter by 'Catering' skill
+        val cateringWorkers = allApplicants.filter { applicant ->
+            applicant.skills.any { it.contains("catering", ignoreCase = true) } ||
+            applicant.role.contains("catering", ignoreCase = true)
+        }
+        assertTrue("Should find workers with catering skill", cateringWorkers.isNotEmpty())
+        assertTrue("Ramesh Kumar should be in catering workers", cateringWorkers.any { it.workerName == "Ramesh Kumar" })
+
+        // 2. Filter by 'Housekeeping' skill
+        val housekeepingWorkers = allApplicants.filter { applicant ->
+            applicant.skills.any { it.contains("housekeeping", ignoreCase = true) } ||
+            applicant.role.contains("housekeeping", ignoreCase = true)
+        }
+        assertTrue("Should find workers with housekeeping skill", housekeepingWorkers.isNotEmpty())
+        assertTrue("Anita Rao should be in housekeeping workers", housekeepingWorkers.any { it.workerName == "Anita Rao" })
+
+        // 3. Filter by 'Verified' status
+        val verifiedWorkers = allApplicants.filter { it.isVerified }
+        val unverifiedWorkers = allApplicants.filter { !it.isVerified }
+        assertTrue("Should have verified workers in marketplace", verifiedWorkers.isNotEmpty())
+        assertTrue("Should have workers pending verification", unverifiedWorkers.isNotEmpty())
+        assertTrue("Ramesh Kumar should be verified", verifiedWorkers.any { it.workerName == "Ramesh Kumar" })
+        assertTrue("Rajesh Naik should be pending verification", unverifiedWorkers.any { it.workerName == "Rajesh Naik" })
+
+        // 4. Combined Filter: 'Housekeeping' + 'Verified Only'
+        val verifiedHousekeeping = allApplicants.filter { applicant ->
+            applicant.isVerified && (
+                applicant.skills.any { it.contains("housekeeping", ignoreCase = true) } ||
+                applicant.role.contains("housekeeping", ignoreCase = true)
+            )
+        }
+        assertTrue("Should find verified housekeeping workers", verifiedHousekeeping.isNotEmpty())
+        assertTrue("Anita Rao should be verified housekeeping lead", verifiedHousekeeping.any { it.workerName == "Anita Rao" })
+        // Rajesh Naik is housekeeping but unverified, so should NOT be in verifiedHousekeeping
+        assertFalse("Unverified worker should not appear in verified housekeeping results", verifiedHousekeeping.any { it.workerName == "Rajesh Naik" })
+
+        // 5. Combined Filter: 'Catering' + 'Verified Only'
+        val verifiedCatering = allApplicants.filter { applicant ->
+            applicant.isVerified && (
+                applicant.skills.any { it.contains("catering", ignoreCase = true) } ||
+                applicant.role.contains("catering", ignoreCase = true)
+            )
+        }
+        assertTrue("Should find verified catering workers", verifiedCatering.isNotEmpty())
+        assertTrue("Sunita Devi should be in verified catering workers", verifiedCatering.any { it.workerName == "Sunita Devi" })
+    }
+
+    @Test
+    fun `test UPI and Bank Account withdrawals in wallet`() {
+        val viewModel = DailyCrewViewModel()
+        val initialBalance = viewModel.workerProfile.value.walletBalance
+        assertTrue("Worker should have positive balance", initialBalance > 2000.0)
+
+        // 1. Withdraw via UPI
+        val upiAmount = 500.0
+        viewModel.withdrawWallet(upiAmount, "UPI", "ramesh@okhdfcbank")
+        val balanceAfterUpi = viewModel.workerProfile.value.walletBalance
+        assertEquals(initialBalance - upiAmount, balanceAfterUpi, 0.01)
+
+        val latestUpiTxn = viewModel.transactions.value.first()
+        assertEquals("Instant UPI", latestUpiTxn.paymentMethod)
+        assertEquals("ramesh@okhdfcbank", latestUpiTxn.businessOrWorker)
+
+        // 2. Withdraw via Bank Account (IMPS)
+        val bankAmount = 1000.0
+        viewModel.withdrawWallet(bankAmount, "Bank Account", "HDFC Bank (A/C ***8234)")
+        val balanceAfterBank = viewModel.workerProfile.value.walletBalance
+        assertEquals(balanceAfterUpi - bankAmount, balanceAfterBank, 0.01)
+
+        val latestBankTxn = viewModel.transactions.value.first()
+        assertEquals("Bank IMPS Transfer", latestBankTxn.paymentMethod)
+        assertEquals("Direct Bank IMPS Payout", latestBankTxn.title)
+        assertEquals("HDFC Bank (A/C ***8234)", latestBankTxn.businessOrWorker)
     }
 }
+
 

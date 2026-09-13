@@ -30,8 +30,9 @@ fun AdminDashboardView(viewModel: DailyCrewViewModel) {
     val businessProfile by viewModel.businessProfile.collectAsState()
     val jobs by viewModel.jobs.collectAsState()
     val bannedUsers by viewModel.bannedUsers.collectAsState()
+    val platformSettings by viewModel.platformSettings.collectAsState()
 
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Disputes, 1: Verification, 2: Jobs, 3: Bans
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Wallet & KPIs, 1: Disputes, 2: Verification, 3: Jobs, 4: Bans
 
     Column(
         modifier = Modifier
@@ -63,7 +64,7 @@ fun AdminDashboardView(viewModel: DailyCrewViewModel) {
                     )
                 }
                 Text(
-                    text = "Platform oversight, trust arbitration, and dispute mediation",
+                    text = "Platform oversight, trust arbitration, and wallet analytics",
                     style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryDark)
                 )
             }
@@ -85,7 +86,7 @@ fun AdminDashboardView(viewModel: DailyCrewViewModel) {
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Platform KPI Summary Cards
+        // Platform KPI Summary Cards (Row 1)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -97,12 +98,30 @@ fun AdminDashboardView(viewModel: DailyCrewViewModel) {
                 border = BorderStroke(1.dp, BrandCardBorderDark)
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
-                    Text("OPEN DISPUTES", color = TextSecondaryDark, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text("TOTAL WORKERS", color = TextSecondaryDark, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "${disputes.count { it.status.startsWith("Under") }}",
-                        color = if (disputes.any { it.status.startsWith("Under") }) BrandAmber else BrandPrimaryGreen,
-                        fontSize = 20.sp,
+                        text = "${platformSettings.totalPlatformWorkersCount}",
+                        color = BrandPrimaryGreen,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(containerColor = BrandSurfaceDark),
+                border = BorderStroke(1.dp, BrandCardBorderDark)
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text("TOTAL OWNERS", color = TextSecondaryDark, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${platformSettings.totalPlatformOwnersCount}",
+                        color = BrandSecondaryCyan,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -119,8 +138,34 @@ fun AdminDashboardView(viewModel: DailyCrewViewModel) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "${jobs.size}",
-                        color = BrandPrimaryGreen,
-                        fontSize = 20.sp,
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Platform KPI Summary Cards (Row 2)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Card(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(containerColor = BrandSurfaceDark),
+                border = BorderStroke(1.dp, BrandCardBorderDark)
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text("COMPLETED JOBS", color = TextSecondaryDark, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${platformSettings.totalCompletedJobsCount}",
+                        color = Color.White,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -133,12 +178,30 @@ fun AdminDashboardView(viewModel: DailyCrewViewModel) {
                 border = BorderStroke(1.dp, BrandCardBorderDark)
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
-                    Text("DEPOSIT ESCROW", color = TextSecondaryDark, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text("DAILY REVENUE", color = TextSecondaryDark, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "₹${(jobs.size * 500)}",
-                        color = Color.White,
-                        fontSize = 18.sp,
+                        text = "₹${platformSettings.dailyRevenue.toInt()}",
+                        color = BrandPrimaryGreen,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(containerColor = BrandSurfaceDark),
+                border = BorderStroke(1.dp, BrandCardBorderDark)
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text("MONTHLY REVENUE", color = TextSecondaryDark, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "₹${(platformSettings.monthlyRevenue / 1000).toInt()}k",
+                        color = BrandSecondaryCyan,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -148,30 +211,36 @@ fun AdminDashboardView(viewModel: DailyCrewViewModel) {
         Spacer(modifier = Modifier.height(14.dp))
 
         // Navigation Tabs
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = selectedTab,
             containerColor = BrandSurfaceDark,
             contentColor = BrandPrimaryGreen,
+            edgePadding = 0.dp,
             divider = {}
         ) {
             Tab(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
-                text = { Text("Disputes (${disputes.size})", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                text = { Text("Wallet & KPIs", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
             )
             Tab(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
-                text = { Text("Verification", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                text = { Text("Disputes (${disputes.size})", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
             )
             Tab(
                 selected = selectedTab == 2,
                 onClick = { selectedTab = 2 },
-                text = { Text("Anti-Fake Jobs", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                text = { Text("Verification", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
             )
             Tab(
                 selected = selectedTab == 3,
                 onClick = { selectedTab = 3 },
+                text = { Text("Anti-Fake Jobs", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+            )
+            Tab(
+                selected = selectedTab == 4,
+                onClick = { selectedTab = 4 },
                 text = { Text("Suspensions", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
             )
         }
@@ -180,6 +249,158 @@ fun AdminDashboardView(viewModel: DailyCrewViewModel) {
 
         when (selectedTab) {
             0 -> {
+                // Admin Wallet & Platform Analytics
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = BrandCardDark),
+                            border = BorderStroke(1.dp, BrandPrimaryGreen.copy(alpha = 0.6f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text("DAILYCREW ADMIN MASTER WALLET", color = BrandPrimaryGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = "₹${"%.2f".format(platformSettings.totalPlatformRevenueCollected)}",
+                                            color = Color.White,
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text("Gross Platform Commission Collected", color = TextSecondaryDark, fontSize = 12.sp)
+                                    }
+                                    Surface(
+                                        color = BrandPrimaryGreenDim,
+                                        shape = CircleShape,
+                                        modifier = Modifier.size(44.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = BrandPrimaryGreen)
+                                        }
+                                    }
+                                }
+
+                                Divider(color = BrandCardBorderDark, modifier = Modifier.padding(vertical = 12.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text("Worker Commissions (9.7%)", color = TextSecondaryDark, fontSize = 11.sp)
+                                        Text("₹${"%.2f".format(platformSettings.totalWorkerCommissionsCollected)}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("Surety Revenue (26.8%)", color = TextSecondaryDark, fontSize = 11.sp)
+                                        Text("₹${"%.2f".format(platformSettings.totalSuretyRevenueCollected)}", color = BrandSecondaryCyan, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text("Referral Rewards Disbursed", color = TextSecondaryDark, fontSize = 11.sp)
+                                        Text("₹${"%.2f".format(platformSettings.totalReferralPayoutsDisbursed)}", color = Color(0xFFFFB74D), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("Net Platform Profit", color = TextSecondaryDark, fontSize = 11.sp)
+                                        Text("₹${"%.2f".format(platformSettings.netProfit)}", color = BrandPrimaryGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = BrandSurfaceDark),
+                            border = BorderStroke(1.dp, BrandCardBorderDark),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Share, contentDescription = null, tint = BrandSecondaryCyan, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Referral Program Statistics", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                }
+                                Text("Real-time referral performance and commission splits across network:", color = TextSecondaryDark, fontSize = 12.sp)
+
+                                Surface(
+                                    color = BrandCardDark,
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, BrandCardBorderDark),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("Worker Referral Cut (on 9.7% commission):", color = TextSecondaryDark, fontSize = 12.sp)
+                                            Text("2.3%", color = BrandPrimaryGreen, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        }
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("Owner Referral Cut (on 26.8% surety revenue):", color = TextSecondaryDark, fontSize = 12.sp)
+                                            Text("3.0%", color = BrandSecondaryCyan, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        }
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("Total Active Referrals in System:", color = TextSecondaryDark, fontSize = 12.sp)
+                                            Text("524", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        }
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("Total Referral Payouts Distributed:", color = TextSecondaryDark, fontSize = 12.sp)
+                                            Text("₹${"%.2f".format(platformSettings.totalReferralPayoutsDisbursed)}", color = Color(0xFFFFB74D), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = BrandSurfaceDark),
+                            border = BorderStroke(1.dp, BrandCardBorderDark),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.TrendingUp, contentDescription = null, tint = BrandPrimaryGreen, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Platform Security & Escrow Health", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Total Active Escrow Deposit:", color = TextSecondaryDark, fontSize = 12.sp)
+                                    Text("₹${jobs.sumOf { it.securityDeposit }.toInt()}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Open Disputes Requiring Review:", color = TextSecondaryDark, fontSize = 12.sp)
+                                    Text("${disputes.count { it.status.startsWith("Under") }}", color = if (disputes.any { it.status.startsWith("Under") }) BrandAmber else BrandPrimaryGreen, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            1 -> {
                 // Disputes Section
                 LazyColumn(
                     modifier = Modifier.weight(1f),

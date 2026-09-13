@@ -35,6 +35,9 @@ val BrandSecondaryBlue = Color(0xFF1E88E5)
 val BrandAmber = Color(0xFFFFB300)
 val BrandAmberDim = Color(0x33FFB300)
 val BrandErrorRed = Color(0xFFFF5252)
+val BrandErrorRedDim = Color(0x33FF5252)
+val BrandRed = BrandErrorRed
+val BrandRedDim = BrandErrorRedDim
 
 // Typography Palette
 val TextPrimaryDark = Color(0xFFFFFFFF)

@@ -26,6 +26,10 @@ fun SuperAdminSettingsView(viewModel: DailyCrewViewModel) {
 
     var commissionRate by remember(currentSettings) { mutableFloatStateOf(currentSettings.commissionRatePercent.toFloat()) }
     var depositAmount by remember(currentSettings) { mutableFloatStateOf(currentSettings.securityDepositPerJob.toFloat()) }
+    var workerWithdrawalPercent by remember(currentSettings) { mutableFloatStateOf(currentSettings.workerWithdrawalCommissionPercent.toFloat()) }
+    var ownerSuretyRefundPercent by remember(currentSettings) { mutableFloatStateOf(currentSettings.ownerSuretyRefundPercent.toFloat()) }
+    var workerReferralBonusPercent by remember(currentSettings) { mutableFloatStateOf(currentSettings.workerReferralBonusPercent.toFloat()) }
+    var ownerReferralBonusPercent by remember(currentSettings) { mutableFloatStateOf(currentSettings.ownerReferralBonusPercent.toFloat()) }
     var autoEscrow by remember(currentSettings) { mutableStateOf(currentSettings.autoEscrowPayoutEnabled) }
     var penaltyScore by remember(currentSettings) { mutableIntStateOf(currentSettings.antiNoShowPenaltyScore) }
 
@@ -196,8 +200,8 @@ fun SuperAdminSettingsView(viewModel: DailyCrewViewModel) {
                 Slider(
                     value = depositAmount,
                     onValueChange = { depositAmount = it },
-                    valueRange = 250f..1500f,
-                    steps = 5,
+                    valueRange = 100f..1500f,
+                    steps = 14,
                     colors = SliderDefaults.colors(
                         thumbColor = BrandSecondaryCyan,
                         activeTrackColor = BrandSecondaryCyan,
@@ -207,6 +211,177 @@ fun SuperAdminSettingsView(viewModel: DailyCrewViewModel) {
 
                 Text(
                     text = "Requires business to deposit ₹${depositAmount.toInt()} into DailyCrew escrow before publishing any shift. Drastically eliminates fake posts.",
+                    color = TextSecondaryDark,
+                    fontSize = 11.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Owner Surety Escrow System Configuration
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = BrandCardDark),
+            border = BorderStroke(1.dp, BrandCardBorderDark),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Owner Surety System (₹300 Escrow)",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        )
+                        Text(
+                            text = "Refund: 73.2% (₹219.60) | Platform Revenue: 26.8% (₹80.40)",
+                            color = BrandSecondaryCyan,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Surface(
+                        color = BrandSecondaryCyanDim,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "${String.format("%.1f", ownerSuretyRefundPercent)}% / ${String.format("%.1f", 100f - ownerSuretyRefundPercent)}%",
+                            color = BrandSecondaryCyan,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "On shift completion, ₹${String.format("%.2f", 300.0 * (ownerSuretyRefundPercent / 100.0))} is returned to owner, and ₹${String.format("%.2f", 300.0 * ((100.0 - ownerSuretyRefundPercent) / 100.0))} is recognized as DailyCrew platform revenue.",
+                    color = TextSecondaryDark,
+                    fontSize = 11.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Worker Payment & Commission Rail
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = BrandCardDark),
+            border = BorderStroke(1.dp, BrandCardBorderDark),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Worker Withdrawal Commission",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        )
+                        Text(
+                            text = "Commission deducted strictly at withdrawal time",
+                            color = TextSecondaryDark,
+                            fontSize = 11.sp
+                        )
+                    }
+
+                    Surface(
+                        color = BrandPrimaryGreenDim,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "${String.format("%.1f", workerWithdrawalPercent)}%",
+                            color = BrandPrimaryGreen,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Worker keeps ${String.format("%.1f", 100f - workerWithdrawalPercent)}% of earnings. Platform takes ${String.format("%.1f", workerWithdrawalPercent)}% on payout (or 0% if referral pass is active).",
+                    color = TextSecondaryDark,
+                    fontSize = 11.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Referral Program Economics Configuration
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = BrandCardDark),
+            border = BorderStroke(1.dp, BrandCardBorderDark),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Referral Program Reward Rails",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                )
+
+                Surface(
+                    color = BrandSurfaceDark,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Worker Referral Bonus (to Worker A)", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("2.3% of platform commission generated from Worker B", color = TextSecondaryDark, fontSize = 10.sp)
+                        }
+                        Text("${String.format("%.1f", workerReferralBonusPercent)}%", color = BrandPrimaryGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+
+                Surface(
+                    color = BrandSurfaceDark,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Owner Referral Bonus (to Owner A)", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("3.0% of DailyCrew's surety revenue from Owner B", color = TextSecondaryDark, fontSize = 10.sp)
+                        }
+                        Text("${String.format("%.1f", ownerReferralBonusPercent)}%", color = BrandSecondaryCyan, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+
+                Text(
+                    text = "Both referred workers and owners receive 2 commission-free shifts / withdrawals upon onboarding.",
                     color = TextSecondaryDark,
                     fontSize = 11.sp
                 )
@@ -324,6 +499,11 @@ fun SuperAdminSettingsView(viewModel: DailyCrewViewModel) {
                     currentSettings.copy(
                         commissionRatePercent = commissionRate.toDouble(),
                         securityDepositPerJob = depositAmount.toDouble(),
+                        workerWithdrawalCommissionPercent = workerWithdrawalPercent.toDouble(),
+                        ownerSuretyRefundPercent = ownerSuretyRefundPercent.toDouble(),
+                        ownerSuretyPlatformCommissionPercent = (100.0 - ownerSuretyRefundPercent.toDouble()),
+                        workerReferralBonusPercent = workerReferralBonusPercent.toDouble(),
+                        ownerReferralBonusPercent = ownerReferralBonusPercent.toDouble(),
                         autoEscrowPayoutEnabled = autoEscrow,
                         antiNoShowPenaltyScore = penaltyScore
                     )

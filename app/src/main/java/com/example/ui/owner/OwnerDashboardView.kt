@@ -2,6 +2,7 @@ package com.example.ui.owner
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,15 +24,19 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.BusinessProfile
 import com.example.data.model.JobApplicant
 import com.example.data.model.ApplicantStatus
+import com.example.data.model.JobPosting
 import com.example.ui.theme.*
 
 @Composable
 fun OwnerDashboardView(
     business: BusinessProfile,
     applicants: List<JobApplicant>,
+    jobs: List<JobPosting> = emptyList(),
     onTriggerPayout: (Double) -> Unit,
     onNavigateToPostJob: () -> Unit,
-    onOpenEmergencyHiring: () -> Unit
+    onOpenEmergencyHiring: () -> Unit,
+    onEditJob: (JobPosting) -> Unit = {},
+    onReferClick: () -> Unit = {}
 ) {
     val checkedInCount = applicants.count { it.status == ApplicantStatus.CHECKED_IN }
     val standbyWorkers = applicants.filter { it.isStandbyReady }
@@ -137,6 +142,86 @@ fun OwnerDashboardView(
                             fontWeight = FontWeight.Bold
                         )
                     }
+                }
+            }
+        }
+
+        // Referral & Surety Split Perks Banner
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (business.freeCommissionJobsCount > 0) BrandSecondaryCyanDim else BrandCardDark
+                ),
+                border = BorderStroke(1.dp, if (business.freeCommissionJobsCount > 0) BrandSecondaryCyan else BrandCardBorderDark),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onReferClick() }
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                shape = CircleShape,
+                                color = BrandSecondaryCyan,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.CardGiftcard,
+                                        contentDescription = null,
+                                        tint = Color.Black,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (business.freeCommissionJobsCount > 0)
+                                        "🎉 ${business.freeCommissionJobsCount} Zero-Fee Shifts Active (100% Surety Refund)!"
+                                    else
+                                        "🎁 Refer an Owner = 2 Zero-Fee Shifts!",
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                )
+                                Text(
+                                    text = "Surety Split: ₹300 deposit -> 73.2% (₹219.60) refund | 27.8% fee",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryDark)
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = onReferClick,
+                            colors = ButtonDefaults.buttonColors(containerColor = BrandSecondaryCyan),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = null,
+                                tint = Color.Black,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Share Link", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Earn 3.0% commission on surety fees of referred owners. Total earned: ₹${"%.2f".format(business.totalReferralEarnings)}",
+                        fontSize = 11.sp,
+                        color = BrandSecondaryCyan
+                    )
                 }
             }
         }
@@ -379,6 +464,29 @@ fun OwnerDashboardView(
                                     color = if (isHere) BrandPrimaryGreen else BrandAmber,
                                     fontWeight = FontWeight.Bold
                                 )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val activeJob = jobs.firstOrNull { it.businessName == business.businessName } ?: jobs.firstOrNull()
+                    if (activeJob != null) {
+                        OutlinedButton(
+                            onClick = { onEditJob(activeJob) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(42.dp)
+                                .testTag("btn_edit_job_shift"),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, BrandAmber.copy(alpha = 0.8f))
+                        ) {
+                            Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = BrandAmber, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Edit Shift Requirements & Pay",
+                                color = BrandAmber,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                             )
                         }
                     }

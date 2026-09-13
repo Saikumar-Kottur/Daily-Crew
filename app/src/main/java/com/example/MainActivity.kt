@@ -23,6 +23,9 @@ class MainActivity : ComponentActivity() {
         notificationService = DailyCrewNotificationService(applicationContext)
         viewModel.setNotificationService(notificationService)
 
+        val database = com.example.data.local.DailyCrewDatabase.getDatabase(applicationContext)
+        viewModel.initDatabase(database)
+
         handleNotificationIntent(intent)
 
         setContent {

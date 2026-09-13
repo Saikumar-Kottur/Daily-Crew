@@ -134,9 +134,14 @@ fun EmergencyHiringDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    onBroadcast(title, selectedCategory, wageAmount, workerCount)
+                    onBroadcast(title.trim(), selectedCategory, wageAmount, workerCount)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = BrandAmber),
+                enabled = title.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BrandAmber,
+                    disabledContainerColor = BrandAmber.copy(alpha = 0.3f),
+                    disabledContentColor = Color.DarkGray
+                ),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.testTag("btn_confirm_emergency_broadcast")
             ) {

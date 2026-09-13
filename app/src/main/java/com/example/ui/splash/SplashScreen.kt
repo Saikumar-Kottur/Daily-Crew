@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.ui.components.AppLogo
+import com.example.ui.components.AppLogoSize
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -96,57 +98,23 @@ fun DailyCrewSplashScreen(
         ) {
             Spacer(modifier = Modifier.weight(0.8f))
 
-            // Prominent DailyCrew Logo with Deep Blue and Green Success Glow
+            // Prominent DailyCrew Logo Widget with Deep Blue and Green Success Glow
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(170.dp)
                     .scale(glowScale)
+                    .testTag("splash_app_logo_container")
             ) {
-                // Outer Green Success Glow Aura
-                Box(
-                    modifier = Modifier
-                        .size(160.dp)
-                        .clip(CircleShape)
-                        .background(BrandSuccessGreen.copy(alpha = 0.12f))
-                )
-
-                // High-fidelity DailyCrew Brand Hero Logo Vector
-                Image(
-                    painter = painterResource(id = R.drawable.ic_dailycrew_logo_hero),
-                    contentDescription = "DailyCrew Official Brand Logo",
-                    modifier = Modifier
-                        .size(140.dp)
-                        .testTag("splash_dailycrew_logo")
+                AppLogo(
+                    size = AppLogoSize.HERO,
+                    isHeroLayoutVertical = true,
+                    showText = true,
+                    showTagline = true,
+                    customTagline = "Verified People. Trusted Work.",
+                    badgeText = "VERIFIED",
+                    modifier = Modifier.testTag("splash_dailycrew_logo")
                 )
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // App Name & Typography
-            Text(
-                text = "DAILYCREW",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Black,
-                    color = Color.White,
-                    letterSpacing = 3.sp,
-                    fontSize = 32.sp
-                ),
-                modifier = Modifier.testTag("splash_brand_title")
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Brand Tagline
-            Text(
-                text = "Verified People. Trusted Work.",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    color = BrandSuccessGreen,
-                    letterSpacing = 0.5.sp,
-                    fontSize = 15.sp
-                )
-            )
 
             Spacer(modifier = Modifier.height(14.dp))
 

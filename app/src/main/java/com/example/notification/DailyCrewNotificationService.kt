@@ -120,7 +120,7 @@ class DailyCrewNotificationService(private val context: Context) {
             val notifId = NOTIF_ID_JOB_OFFSET + (System.currentTimeMillis() % 1000).toInt()
             notificationManager.notify(notifId, notification)
             return true
-        } catch (e: SecurityException) {
+        } catch (e: Exception) {
             return false
         }
     }
@@ -166,7 +166,7 @@ class DailyCrewNotificationService(private val context: Context) {
             val notifId = NOTIF_ID_APPLICANT_OFFSET + (System.currentTimeMillis() % 1000).toInt()
             notificationManager.notify(notifId, notification)
             return true
-        } catch (e: SecurityException) {
+        } catch (e: Exception) {
             return false
         }
     }
@@ -217,7 +217,7 @@ class DailyCrewNotificationService(private val context: Context) {
             val notifId = NOTIF_ID_CHECKIN_OFFSET + (System.currentTimeMillis() % 1000).toInt()
             notificationManager.notify(notifId, notification)
             return true
-        } catch (e: SecurityException) {
+        } catch (e: Exception) {
             return false
         }
     }
@@ -268,7 +268,7 @@ class DailyCrewNotificationService(private val context: Context) {
             val notifId = NOTIF_ID_CHECKOUT_OFFSET + (System.currentTimeMillis() % 1000).toInt()
             notificationManager.notify(notifId, notification)
             return true
-        } catch (e: SecurityException) {
+        } catch (e: Exception) {
             return false
         }
     }
